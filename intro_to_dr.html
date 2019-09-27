@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>Introduction to Dimensionality Reduction</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Katarzyna Kedzierska" />
+    <meta name="date" content="2019-09-27" />
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Introduction to Dimensionality Reduction
+### Katarzyna Kedzierska
+### 27 September 2019
+
+---
+
+
+
+
+
+
+
+
+# Outline 
+
+What will be talking about today?
+
+* What is dimensionality reduction?  
+* Why should we use it?  
+* What is clustering?  
+* We will walk through one example.
+
+---
+
+# What does dimensionality reduction mean?
+
+We can reduce dimensionality of our data by for example explaining two measuremnets by one. 
+
+Let's say we have rectangle dimenions:
+
+
+```r
+rect_dims &lt;- tibble(rect = 1:5,
+                    a = sample(1:10, 5, replace = TRUE),
+                    b = sample(5:10, 5, replace = TRUE))
+rect_dims
+```
+
+```
+## # A tibble: 5 x 3
+##    rect     a     b
+##   &lt;int&gt; &lt;int&gt; &lt;int&gt;
+## 1     1    10     9
+## 2     2     6    10
+## 3     3     2     7
+## 4     4     1     6
+## 5     5     4     9
+```
+
+---
+
+We reduce dimenions by expressing the `a` and `b` variables by some representation. For example, we can calculate the area:
+
+
+```r
+rect_dims %&gt;%
+  mutate(area = a * b) %&gt;%
+  select(rect, area)
+```
+
+```
+## # A tibble: 5 x 2
+##    rect  area
+##   &lt;int&gt; &lt;int&gt;
+## 1     1    90
+## 2     2    60
+## 3     3    14
+## 4     4     6
+## 5     5    36
+```
+
+---
+
+Why bother you may ask.
+
+
+```r
+head(iris)
+```
+
+```
+##   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+## 1          5.1         3.5          1.4         0.2  setosa
+## 2          4.9         3.0          1.4         0.2  setosa
+## 3          4.7         3.2          1.3         0.2  setosa
+## 4          4.6         3.1          1.5         0.2  setosa
+## 5          5.0         3.6          1.4         0.2  setosa
+## 6          5.4         3.9          1.7         0.4  setosa
+```
+
+
+```r
+cor.test(~ Sepal.Length + Petal.Length, data = iris)
+```
+
+```
+## 
+## 	Pearson's product-moment correlation
+## 
+## data:  Sepal.Length and Petal.Length
+## t = 21.646, df = 148, p-value &lt; 2.2e-16
+## alternative hypothesis: true correlation is not equal to 0
+## 95 percent confidence interval:
+##  0.8270363 0.9055080
+## sample estimates:
+##       cor 
+## 0.8717538
+```
+---
+
+# Why do dimensionality reduction?
+
+Let's take a simple polyA RNA-seq experiment. We will perform that experiment on **3 groups, 10 patients each (n = 30, technically 3 x n = 10)**. We want to compare expression on gene level - let's assume that human genome have **20 000 protein coding genes**. Some of them are not expressed in our tissue of interest, and we can assume that in our analysis we will be left with **12 000 genes**. What now? :)
+
+We can do Dimensionality Reduction!
+
+In brief, dimensionality reduction is a task of representing multidimensional data (for example expression data) into low dimensional (1-3D) space. For humans to see patterns, be able to comprehend the data.
+
+---
+# Dimensionality Reduction methods
+
+*Note:* those are the ones we will touch on in this brief tutorial, there are many more methods! 
+*Note2:* the following classification of the methos is arbitrary and serves only teaching purposes. 
+
+* Linear methods
++ Principal Component Aanalysis (PCA)
++ Classical / Metric Multidimensioanl Scaling == Principal Coordinate Analysis (PCoA)
+* Non-linear methos
++ Non-Metric Multidimensional Scaling (NMDS)
++ t-distributed Stochastic Neighbor Embedding (tSNE)
++ Uniform Manifold Approximation and Projection (UMAP)
+
+.footnote[[In-depth introdction to DR methods](https://www.youtube.com/watch?v=9iol3Lk6kyU&amp;t=722s)]
+---
+
+## Principal Component Analysis (PCA)
+
+The goal of the PCA
+
+&lt;img src="https://i.stack.imgur.com/lNHqt.gif" width="900px" height="300px" /&gt;
+
+.footnote[[PCA on Setosa](http://setosa.io/ev/principal-component-analysis/)]
+
+---
+
+## Principal Component Analysis
+
+
+```r
+set.seed(7)
+samp_df &lt;- tibble(x = rnorm(10), y = rnorm(10))
+
+samp_df %&gt;%
+  ggplot(., aes(x, y)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+&lt;img src="intro_to_dr_files/figure-html/unnamed-chunk-7-1.png" width="300px" height="300px" /&gt;
+
+.footnote[[Making sense of PCA on CrossValidated](https://stats.stackexchange.com/questions/2691/making-sense-of-principal-component-analysis-eigenvectors-eigenvalues)]
+
+---
+
+```r
+head(iris)
+```
+
+```
+##   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+## 1          5.1         3.5          1.4         0.2  setosa
+## 2          4.9         3.0          1.4         0.2  setosa
+## 3          4.7         3.2          1.3         0.2  setosa
+## 4          4.6         3.1          1.5         0.2  setosa
+## 5          5.0         3.6          1.4         0.2  setosa
+## 6          5.4         3.9          1.7         0.4  setosa
+```
+
+One command and we're done!
+
+
+```r
+iris_pca &lt;- prcomp(iris[,1:4], scale = TRUE, center = TRUE)
+```
+
+---
+
+
+```r
+summary(iris_pca)
+```
+
+```
+## Importance of components:
+##                           PC1    PC2     PC3     PC4
+## Standard deviation     1.7084 0.9560 0.38309 0.14393
+## Proportion of Variance 0.7296 0.2285 0.03669 0.00518
+## Cumulative Proportion  0.7296 0.9581 0.99482 1.00000
+```
+
+&lt;img src="intro_to_dr_files/figure-html/unnamed-chunk-11-1.png" width="300px" height="300px" /&gt;
+
+---
+
+&lt;img src="intro_to_dr_files/figure-html/unnamed-chunk-12-1.png" width="700px" height="600px" /&gt;
+
+---
+
+&lt;img src="intro_to_dr_files/figure-html/unnamed-chunk-13-1.png" width="700px" height="600px" /&gt;
+
+---
+
+## Distances
+
+Exactly what you think it is. :)
+
+
+```r
+dist(samp_df[1:2,])
+```
+
+```
+##          1
+## 2 4.207954
+```
+
+&lt;img src="intro_to_dr_files/figure-html/unnamed-chunk-15-1.png" width="200px" height="200px" /&gt;
+
+
+
+
+```r
+sqrt((x1 - x2)^2 + (y1 - y2)^2)
+```
+
+```
+##          x
+## 1 4.207954
+```
+
+---
+## Classical / Metric Multidimensioanl Scaling == Principal Coordinate Analysis (PCoA)
+
+
+```r
+iris_dist &lt;- dist(iris[,1:4])
+iris_pcoa &lt;- cmdscale(iris_dist)
+```
+
+
+```r
+head(iris_pcoa)
+```
+
+```
+##           [,1]       [,2]
+## [1,] -2.684126  0.3193972
+## [2,] -2.714142 -0.1770012
+## [3,] -2.888991 -0.1449494
+## [4,] -2.745343 -0.3182990
+## [5,] -2.728717  0.3267545
+## [6,] -2.280860  0.7413304
+```
+
+&lt;img src="intro_to_dr_files/figure-html/unnamed-chunk-20-1.png" width="300px" height="300px" /&gt;
+
+---
+.pull-left[
+
+```r
+iris_pca_plt
+```
+
+&lt;img src="intro_to_dr_files/figure-html/unnamed-chunk-21-1.png" width="300px" height="300px" /&gt;
+
+]
+.pull-right[
+
+```r
+iris_pcoa_plt
+```
+
+&lt;img src="intro_to_dr_files/figure-html/unnamed-chunk-22-1.png" width="300px" height="300px" /&gt;
+]
+
+---
+## UMAP
+
+.footnote[[UMAP @ SciPy2018](https://www.youtube.com/watch?v=nq6iPZVUxZU)]
+---
+
+# Resources
+
+* [Modern Statistics for Modern Biology](http://web.stanford.edu/class/bios221/book/index.html)  
+  
+&lt;img src="http://web.stanford.edu/class/bios221/book/images/MSFMB-Cover2-compressed.jpg" width="300px" height="350px" /&gt;
+* [In-depth introdction to DR methods](https://www.youtube.com/watch?v=9iol3Lk6kyU&amp;t=722s)   
+* [Making sense of PCA on CrossValidated](https://stats.stackexchange.com/questions/2691/making-sense-of-principal-component-analysis-eigenvectors-eigenvalues)  
+* [UMAP @ SciPy2018](https://www.youtube.com/watch?v=nq6iPZVUxZU)  
+*
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create();
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
